@@ -1,12 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Job AutoFill",
-  "version": "1.2",
+  "version": "1.6",
   "description": "Capture and autofill job application fields.",
   "permissions": ["storage", "scripting", "activeTab"],
   "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
@@ -15,5 +18,15 @@
       "run_at": "document_idle",
       "all_frames": true
     }
-  ]
+  ],
+  "commands": {
+    "save_fields": {
+      "suggested_key": "Alt+1",
+      "description": "Save fields on this page"
+    },
+    "fill_fields": {
+      "suggested_key": "Alt+2",
+      "description": "Fill fields on this page"
+    }
+  }
 }
