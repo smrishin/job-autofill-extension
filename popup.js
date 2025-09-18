@@ -6,7 +6,7 @@ function sendMessageToTab(action) {
         console.error("Error:", chrome.runtime.lastError.message);
         alert("This page does not support autofill. Try a different page.");
       } else {
-        console.log("Response from content script:", response);
+        console.log("Response:", response);
       }
     });
   });
