@@ -143,6 +143,98 @@ function fillFields() {
   });
 }
 
+function saveSingleField(el) {
+  const storageKey = getStorageKey();
+
+  chrome.storage.local.get(storageKey, (data) => {
+    const existingFields = data[storageKey] || {};
+    const newFields = { ...existingFields };
+
+    const key = el.name || el.id || el.placeholder || "";
+    if (!key) return;
+
+    let currentValue;
+    if (el.type === "checkbox") {
+      currentValue = el.checked;
+    } else if (el.type === "radio") {
+      if (el.checked) {
+        currentValue = el.value; // store only selected radio
+      } else {
+        return; // skip unselected radios
+      }
+    } else {
+      currentValue = el.value;
+    }
+
+    if (
+      currentValue !== "" &&
+      currentValue !== null &&
+      currentValue !== undefined
+    ) {
+      newFields[key] = {
+        content: currentValue,
+        id: el.id || "",
+        label:
+          (el.labels && el.labels[0] && el.labels[0].innerText) ||
+          el.getAttribute("aria-label") ||
+          el.placeholder ||
+          "",
+        name: el.name || "",
+        placeholder: el.placeholder || "",
+        time: Date.now(),
+        type: el.type || el.tagName.toLowerCase()
+      };
+
+      chrome.storage.local.set({ [storageKey]: newFields }, () => {
+        showToast(`💾 Saved ${key} for ${storageKey}`);
+        console.log("Auto-saved field:", key, newFields[key]);
+      });
+    }
+  });
+}
+
+function enableAutoCapture() {
+  document.querySelectorAll("input, textarea, select").forEach((el) => {
+    if (el.dataset.autocapture === "true") return;
+    if (el.type === "password") return;
+
+    el.addEventListener("blur", () => {
+      saveSingleField(el);
+    });
+
+    el.dataset.autocapture = "true";
+  });
+}
+
+// Run initially and also watch for dynamically added fields
+function initAutoCapture() {
+  enableAutoCapture();
+
+  const observer = new MutationObserver(() => {
+    enableAutoCapture();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+console.log("Job AutoFill content script loaded");
+
+function shouldIgnoreAutoCapture() {
+  const ignoredDomains = ["linkedin.com"];
+  return ignoredDomains.some((domain) =>
+    window.location.hostname.includes(domain)
+  );
+}
+
+if (!shouldIgnoreAutoCapture()) {
+  console.log("Job AutoFill auto-capture enabled on", window.location.hostname);
+  initAutoCapture();
+} else {
+  console.log(
+    "Job AutoFill auto-capture disabled on",
+    window.location.hostname
+  );
+}
+
 // Listen for popup or shortcut messages
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
   if (req.action === "capture") {
